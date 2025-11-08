@@ -6,6 +6,7 @@
     "dev": "bun run --watch src/index.ts"
   },
   "dependencies": {
+    "@prakrit_m/tmn-voucher": "^1.0.5",
     "elysia": "latest"
   },
   "devDependencies": {
