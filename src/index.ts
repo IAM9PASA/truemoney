@@ -4,7 +4,7 @@ import redeemvouchers from "@prakrit_m/tmn-voucher";
 // แปลงข้อความตอบกลับจาก api ของ voucher
 function convert_message(response: {
     code: string;
-    message: string
+    message: string;
 }): string {
     switch (response.code) {
         case "VOUCHER_NOT_FOUND":
@@ -18,12 +18,11 @@ function convert_message(response: {
         case "CONDITION_NOT_MET":
             return "ไม่ตรงเงื่อนไข";
         default:
-            return `การแลกซองล้มเหลว: ${response.message
-                }`;
+            return `การแลกซองล้มเหลว: ${response.message}`;
     }
 }
 
-const app = new Elysia()
+new Elysia()
     .get("/", () => "api working")
     .post("/redeem", async ({ body, set }) => {
         try {
@@ -34,7 +33,11 @@ const app = new Elysia()
 
             if (!phone_number || !voucher_url) {
                 set.status = 400;
-                return { success: false, status: 400, message: "กรุณาระบุเบอร์โทรศัพท์และลิงก์คูปอง" };
+                return {
+                    success: false,
+                    status: 400,
+                    message: "กรุณาระบุเบอร์โทรศัพท์และลิงก์คูปอง",
+                };
             }
 
             try {
@@ -50,20 +53,24 @@ const app = new Elysia()
                             message: "รับเงินสำเร็จ",
                             data: {
                                 name: ticket.full_name,
-                                amount: ticket.amount_baht
-                            }
+                                amount: ticket.amount_baht,
+                            },
                         };
                     }
 
                     set.status = 400;
-                    return { success: false, status: 400, message: "ไม่พบผู้รับซอง" };
+                    return {
+                        success: false,
+                        status: 400,
+                        message: "ไม่พบผู้รับซอง",
+                    };
                 } else {
                     const message = convert_message(result);
                     set.status = 400;
                     return {
                         success: false,
                         status: 400,
-                        message: message || "ไม่สามารถรับซองได้"
+                        message: message || "ไม่สามารถรับซองได้",
                     };
                 }
             } catch (error) {
@@ -71,15 +78,22 @@ const app = new Elysia()
                 return {
                     success: false,
                     status: 500,
-                    message: error instanceof Error ? error.message : "Unknown error"
+                    message: error instanceof Error
+                        ? error.message
+                        : "Unknown error",
                 };
             }
         } catch {
             set.status = 400;
-            return { success: false, status: 400, message: "ข้อมูลที่ส่งมาไม่ใช่ JSON" };
+            return {
+                success: false,
+                status: 400,
+                message: "ข้อมูลที่ส่งมาไม่ใช่ JSON",
+            };
         }
-    }
-    )
+    })
     .listen(3000);
 
-console.log("truemoney api running at http://localhost:3000")
+console.log("truemoney api running at http://localhost:3000");
+
+// pc update
