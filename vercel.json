@@ -1,0 +1,11 @@
+{
+    "functions": {
+        "api/**/*.ts": {
+            "runtime": "nodejs20.x"
+        }
+    },
+    "framework": "elysia",
+    "installCommand": "bun install",
+    "buildCommand": "bun run build",
+    "bunVersion": "1.x"
+}
