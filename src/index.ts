@@ -22,7 +22,7 @@ function convert_message(response: {
     }
 }
 
-new Elysia()
+export default new Elysia()
     .get("/", () => "api working")
     .post("/redeem", async ({ body, set }) => {
         try {
@@ -93,5 +93,3 @@ new Elysia()
         }
     })
     .listen(3000);
-
-console.log("truemoney api running at http://localhost:3000");

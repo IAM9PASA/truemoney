@@ -1,4 +1,6 @@
 {
     "bunVersion": "1.x",
-    "framework": "elysia"
-  }
+    "framework": "elysia",
+    "buildCommand": "bun run build",
+    "outputDirectory": "dist"
+}
