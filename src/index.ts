@@ -32,10 +32,8 @@ export default new Elysia()
             };
 
             if (!phone_number || !voucher_url) {
-                set.status = 400;
                 return {
                     success: false,
-                    status: 400,
                     message: "กรุณาระบุเบอร์โทรศัพท์และลิงก์คูปอง",
                 };
             }
@@ -49,7 +47,6 @@ export default new Elysia()
                     if (ticket) {
                         return {
                             success: true,
-                            status: 200,
                             message: "รับเงินสำเร็จ",
                             data: {
                                 name: ticket.full_name,
@@ -58,36 +55,29 @@ export default new Elysia()
                         };
                     }
 
-                    set.status = 400;
+
                     return {
                         success: false,
-                        status: 400,
                         message: "ไม่พบผู้รับซอง",
                     };
                 } else {
                     const message = convert_message(result);
-                    set.status = 400;
                     return {
                         success: false,
-                        status: 400,
                         message: message || "ไม่สามารถรับซองได้",
                     };
                 }
             } catch (error) {
-                set.status = 500;
                 return {
                     success: false,
-                    status: 500,
                     message: error instanceof Error
                         ? error.message
                         : "Unknown error",
                 };
             }
         } catch {
-            set.status = 400;
             return {
                 success: false,
-                status: 400,
                 message: "ข้อมูลที่ส่งมาไม่ใช่ JSON",
             };
         }
