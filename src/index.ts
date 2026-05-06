@@ -26,7 +26,7 @@ function convert_message(response: {
 export default new Elysia()
 
     .use(cors({
-        origin: "https://app.sigmasobad.xyz",
+        origin: "https://shop.sigmasobad.xyz",
         methods: ["GET", "POST", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true
