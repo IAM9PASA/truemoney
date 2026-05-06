@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import { cors } from '@elysiajs/cors'
 import redeemvouchers from "@prakrit_m/tmn-voucher";
 
 // แปลงข้อความตอบกลับจาก api ของ voucher
@@ -23,8 +24,17 @@ function convert_message(response: {
 }
 
 export default new Elysia()
+
+    .use(cors({
+        origin: "https://app.sigmasobad.xyz",
+        methods: ["GET", "POST", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true
+    }))
+
     .get("/", () => "api working")
-    .post("/redeem", async ({ body, set }) => {
+
+    .post("/redeem", async ({ body }) => {
         try {
             const { phone_number, voucher_url } = body as {
                 phone_number?: string;
@@ -55,16 +65,14 @@ export default new Elysia()
                         };
                     }
 
-
                     return {
                         success: false,
                         message: "ไม่พบผู้รับซอง",
                     };
                 } else {
-                    const message = convert_message(result);
                     return {
                         success: false,
-                        message: message || "ไม่สามารถรับซองได้",
+                        message: convert_message(result),
                     };
                 }
             } catch (error) {
@@ -82,4 +90,5 @@ export default new Elysia()
             };
         }
     })
+
     .listen(3000);
