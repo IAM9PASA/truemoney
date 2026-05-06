@@ -5,6 +5,7 @@
     "": {
       "name": "app",
       "dependencies": {
+        "@elysiajs/cors": "^1.4.2",
         "@prakrit_m/tmn-voucher": "^1.0.5",
         "elysia": "latest",
       },
@@ -15,6 +16,8 @@
   },
   "packages": {
     "@borewit/text-codec": ["@borewit/text-codec@0.1.1", "", {}, "sha512-5L/uBxmjaCIX5h8Z+uu+kA9BQLkc/Wl06UGR5ajNRxu+/XjonB5i8JpgFMrPj3LXTCPA0pv8yxUvbUi+QthGGA=="],
+
+    "@elysiajs/cors": ["@elysiajs/cors@1.4.2", "", { "peerDependencies": { "elysia": ">= 1.4.0" } }, "sha512-FTCcbH35brTLigF1W7BYySRZomgI/dBEMK9BgK9RP9Nez7zmpGh4koL/Yr1BFv8nYz7CfhRvcM8d/c+XnwMaVQ=="],
 
     "@prakrit_m/tmn-voucher": ["@prakrit_m/tmn-voucher@1.0.5", "", { "dependencies": { "zod": "^3.24.1" } }, "sha512-1PdDDlH3W4PlAo2OKCa9MdZUH3R0e6TEMZIGB8nDNaPwiVCag3MgomVvsaFwQyvl6/u/8RecswutwBTcPIw/9w=="],
 
