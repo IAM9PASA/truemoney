@@ -46,63 +46,8 @@ const app = new Elysia()
             credentials: true,
         }),
     )
-
-    .get("/", () => "voucher api working")
-
-    .post("/redeem", async ({ body }) => {
-        try {
-            const { phone_number, voucher_url } = body as {
-                phone_number?: string;
-                voucher_url?: string;
-            };
-
-            if (!phone_number || !voucher_url) {
-                return {
-                    success: false,
-                    message: "กรุณาระบุเบอร์โทรศัพท์และลิงก์คูปอง",
-                };
-            }
-
-            try {
-                const result = await voucherClient.redeemVoucher(
-                    phone_number,
-                    voucher_url,
-                );
-
-                if (result.success) {
-                    const ticket =
-                        result.data.raw.my_ticket ?? result.data.raw.tickets?.[0];
-
-                    if (ticket) {
-                        return {
-                            success: true,
-                            message: "รับเงินสำเร็จ",
-                            data: {
-                                name: ticket.full_name,
-                                amount: ticket.amount_baht,
-                            },
-                        };
-                    }
-
-                    return {
-                        success: false,
-                        message: "ไม่พบผู้รับซอง",
-                    };
-                }
-
-                return {
-                    success: false,
-                    message: convert_message(result),
-                };
-            } catch (error) {
-                return {
-                    success: false,
-                    message: error instanceof Error
-                        ? error.message
-                        : "Unknown error",
-                };
-            }
-        } catch {
+    .onError(({ code }) => {
+        if (code === "PARSE") {
             return {
                 success: false,
                 message: "ข้อมูลที่ส่งมาไม่ใช่ JSON",
@@ -110,11 +55,69 @@ const app = new Elysia()
         }
     })
 
-    .listen({
+    .get("/", () => "voucher api working")
+
+    .post("/redeem", async ({ body }) => {
+        const { phone_number, voucher_url } = (body ?? {}) as {
+            phone_number?: string;
+            voucher_url?: string;
+        };
+
+        if (!phone_number || !voucher_url) {
+            return {
+                success: false,
+                message: "กรุณาระบุเบอร์โทรศัพท์และลิงก์คูปอง",
+            };
+        }
+
+        try {
+            const result = await voucherClient.redeemVoucher(
+                phone_number,
+                voucher_url,
+            );
+
+            if (result.success) {
+                const ticket =
+                    result.data.raw.my_ticket ?? result.data.raw.tickets?.[0];
+
+                if (ticket) {
+                    return {
+                        success: true,
+                        message: "รับเงินสำเร็จ",
+                        data: {
+                            name: ticket.full_name,
+                            amount: ticket.amount_baht,
+                        },
+                    };
+                }
+
+                return {
+                    success: false,
+                    message: "ไม่พบผู้รับซอง",
+                };
+            }
+
+            return {
+                success: false,
+                message: convert_message(result),
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error instanceof Error
+                    ? error.message
+                    : "Unknown error",
+            };
+        }
+    });
+
+if (!process.env.VERCEL) {
+    app.listen({
         hostname: "0.0.0.0",
         port: Number(process.env.PORT ?? 3000),
     });
 
-console.log(`Running on http://localhost:${app.server?.port}`);
+    console.log(`Running on http://localhost:${app.server?.port}`);
+}
 
 export default app;
