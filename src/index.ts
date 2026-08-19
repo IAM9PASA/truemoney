@@ -1,8 +1,9 @@
 import { Elysia } from "elysia";
-import { cors } from '@elysiajs/cors'
-import redeemvouchers from "@prakrit_m/tmn-voucher";
+import { cors } from "@elysiajs/cors";
+import { TmnVoucherClient } from "@prakrit_m/tmn-voucher";
 
-// แปลงข้อความตอบกลับจาก api ของ voucher
+const voucherClient = new TmnVoucherClient();
+
 function convert_message(response: {
     code: string;
     message: string;
@@ -18,21 +19,35 @@ function convert_message(response: {
             return "ไม่สามารถใช้ซองตัวเองได้";
         case "CONDITION_NOT_MET":
             return "ไม่ตรงเงื่อนไข";
+        case "TARGET_USER_NOT_FOUND":
+            return "ไม่พบบัญชีผู้รับ";
+        case "TARGET_USER_REDEEMED":
+            return "บัญชีนี้เคยรับซองนี้แล้ว";
+        case "TARGET_USER_STATUS_INACTIVE":
+            return "บัญชีผู้รับไม่พร้อมใช้งาน";
+        case "INVALID_INPUT":
+            return "ข้อมูลไม่ถูกต้อง";
+        case "MAINTENANCE":
+            return "ระบบซองกำลังปิดปรับปรุง";
+        case "TIMEOUT":
+            return "การเชื่อมต่อหมดเวลา";
+        case "NETWORK_ERROR":
+            return "เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ";
         default:
             return `การแลกซองล้มเหลว: ${response.message}`;
     }
 }
 
-export default new Elysia()
+const app = new Elysia()
+    .use(
+        cors({
+            methods: ["GET", "POST", "OPTIONS"],
+            allowedHeaders: ["Content-Type", "Authorization"],
+            credentials: true,
+        }),
+    )
 
-    .use(cors({
-        origin: "https://shop.sigmasobad.xyz",
-        methods: ["GET", "POST", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-        credentials: true
-    }))
-
-    .get("/", () => "api working")
+    .get("/", () => "voucher api working")
 
     .post("/redeem", async ({ body }) => {
         try {
@@ -49,10 +64,14 @@ export default new Elysia()
             }
 
             try {
-                const result = await redeemvouchers(phone_number, voucher_url);
+                const result = await voucherClient.redeemVoucher(
+                    phone_number,
+                    voucher_url,
+                );
 
                 if (result.success) {
-                    const ticket = result.data.tickets?.[0];
+                    const ticket =
+                        result.data.raw.my_ticket ?? result.data.raw.tickets?.[0];
 
                     if (ticket) {
                         return {
@@ -69,12 +88,12 @@ export default new Elysia()
                         success: false,
                         message: "ไม่พบผู้รับซอง",
                     };
-                } else {
-                    return {
-                        success: false,
-                        message: convert_message(result),
-                    };
                 }
+
+                return {
+                    success: false,
+                    message: convert_message(result),
+                };
             } catch (error) {
                 return {
                     success: false,
@@ -91,4 +110,11 @@ export default new Elysia()
         }
     })
 
-    .listen(3000);
+    .listen({
+        hostname: "0.0.0.0",
+        port: Number(process.env.PORT ?? 3000),
+    });
+
+console.log(`Running on http://localhost:${app.server?.port}`);
+
+export default app;
