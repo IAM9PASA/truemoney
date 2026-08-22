@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
-import { Impit } from "impit";
+import { Impit, type HttpMethod, type RequestInit as ImpitRequestInit } from "impit";
 import { TmnVoucherClient } from "@prakrit_m/tmn-voucher";
 
 const impit = new Impit({
@@ -32,6 +32,42 @@ function request_url(input: string | URL | Request): string {
         return input.href;
     }
     return input.url;
+}
+
+function to_http_method(method: string | undefined): HttpMethod | undefined {
+    if (!method) {
+        return undefined;
+    }
+    const upper = method.toUpperCase();
+    const allowed: HttpMethod[] = [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH",
+        "HEAD",
+        "OPTIONS",
+        "TRACE",
+    ];
+    return allowed.find((m) => m === upper);
+}
+
+function to_impit_init(init?: RequestInit): ImpitRequestInit | undefined {
+    if (!init) {
+        return undefined;
+    }
+    const headers: Record<string, string> = {};
+    if (init.headers) {
+        new Headers(init.headers).forEach((value, key) => {
+            headers[key] = value;
+        });
+    }
+    const body = init.body;
+    return {
+        method: to_http_method(init.method),
+        headers,
+        body: typeof body === "string" ? body : undefined,
+    };
 }
 
 function tmn_status_code(value: unknown): string | null {
@@ -94,7 +130,7 @@ async function tmn_fetch(
     init?: RequestInit,
 ): Promise<Response> {
     const url = request_url(input);
-    const res = await impit.fetch(url, init);
+    const res = await impit.fetch(url, to_impit_init(init));
     const text = await res.text();
 
     if (res.ok) {
