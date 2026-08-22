@@ -4680,6 +4680,1219 @@ var require_dist = __commonJS((exports) => {
   }
 });
 
+// node_modules/impit/errors.js
+var require_errors = __commonJS((exports, module) => {
+  class ImpitError extends Error {
+    constructor(msg) {
+      super(msg);
+      this.name = this.constructor.name;
+    }
+  }
+
+  class HTTPError extends ImpitError {
+  }
+
+  class RequestError extends ImpitError {
+  }
+
+  class TransportError extends RequestError {
+  }
+
+  class TimeoutError extends TransportError {
+  }
+
+  class ConnectTimeout extends TimeoutError {
+  }
+
+  class ReadTimeout extends TimeoutError {
+  }
+
+  class WriteTimeout extends TimeoutError {
+  }
+
+  class PoolTimeout extends TimeoutError {
+  }
+
+  class NetworkError extends TransportError {
+  }
+
+  class ConnectError extends NetworkError {
+  }
+
+  class ReadError extends NetworkError {
+  }
+
+  class WriteError extends NetworkError {
+  }
+
+  class CloseError extends NetworkError {
+  }
+
+  class ProtocolError extends TransportError {
+  }
+
+  class LocalProtocolError extends ProtocolError {
+  }
+
+  class RemoteProtocolError extends ProtocolError {
+  }
+
+  class ProxyError extends TransportError {
+  }
+
+  class ProxyTunnelError extends ProxyError {
+    constructor(msg) {
+      super(msg);
+      const match = msg.match(/with status code (\d+)/);
+      this.status = match ? Number(match[1]) : undefined;
+    }
+  }
+
+  class ProxyAuthRequired extends ProxyError {
+  }
+
+  class UnsupportedProtocol extends TransportError {
+  }
+
+  class DecodingError extends RequestError {
+  }
+
+  class TooManyRedirects extends RequestError {
+  }
+
+  class HTTPStatusError extends HTTPError {
+  }
+
+  class InvalidURL extends ImpitError {
+  }
+
+  class CookieConflict extends ImpitError {
+  }
+
+  class StreamError extends ImpitError {
+  }
+
+  class StreamConsumed extends StreamError {
+  }
+
+  class ResponseNotRead extends StreamError {
+  }
+
+  class RequestNotRead extends StreamError {
+  }
+
+  class StreamClosed extends StreamError {
+  }
+  var errorClassMap = {
+    HTTPError,
+    RequestError,
+    TransportError,
+    TimeoutException: TimeoutError,
+    ConnectTimeout,
+    ReadTimeout,
+    WriteTimeout,
+    PoolTimeout,
+    NetworkError,
+    ConnectError,
+    ReadError,
+    WriteError,
+    CloseError,
+    ProtocolError,
+    LocalProtocolError,
+    RemoteProtocolError,
+    ProxyError,
+    ProxyTunnelError,
+    ProxyAuthRequired,
+    UnsupportedProtocol,
+    DecodingError,
+    TooManyRedirects,
+    HTTPStatusError,
+    InvalidURL,
+    CookieConflict,
+    StreamError,
+    StreamConsumed,
+    ResponseNotRead,
+    RequestNotRead,
+    StreamClosed
+  };
+  function rethrowNativeError(err2) {
+    const match = err2.message?.match(/^(\w+): ([\s\S]*)$/);
+    if (match) {
+      const [, code, message] = match;
+      const ErrorClass = errorClassMap[code];
+      if (ErrorClass) {
+        throw new ErrorClass(message);
+      }
+    }
+    throw err2;
+  }
+  module.exports = {
+    rethrowNativeError,
+    ImpitError,
+    HTTPError,
+    RequestError,
+    TransportError,
+    TimeoutError,
+    ConnectTimeout,
+    ReadTimeout,
+    WriteTimeout,
+    PoolTimeout,
+    NetworkError,
+    ConnectError,
+    ReadError,
+    WriteError,
+    CloseError,
+    ProtocolError,
+    LocalProtocolError,
+    RemoteProtocolError,
+    ProxyError,
+    ProxyTunnelError,
+    ProxyAuthRequired,
+    UnsupportedProtocol,
+    DecodingError,
+    TooManyRedirects,
+    HTTPStatusError,
+    InvalidURL,
+    CookieConflict,
+    StreamError,
+    StreamConsumed,
+    ResponseNotRead,
+    RequestNotRead,
+    StreamClosed
+  };
+});
+
+// node_modules/impit-win32-x64-msvc/impit-node.win32-x64-msvc.node
+var require_impit_node_win32_x64_msvc = __commonJS((exports, module) => {
+  module.exports = __require("./impit-node.win32-x64-msvc-jb9n4nmx.node");
+});
+
+// node_modules/impit-win32-x64-msvc/package.json
+var require_package = __commonJS((exports, module) => {
+  module.exports = {
+    name: "impit-win32-x64-msvc",
+    homepage: "https://apify.github.io/impit/js",
+    version: "0.14.3",
+    os: [
+      "win32"
+    ],
+    cpu: [
+      "x64"
+    ],
+    main: "impit-node.win32-x64-msvc.node",
+    files: [
+      "impit-node.win32-x64-msvc.node"
+    ],
+    description: "Impit for JavaScript",
+    license: "Apache-2.0",
+    engines: {
+      node: ">= 10"
+    },
+    repository: "https://github.com/apify/impit"
+  };
+});
+
+// node_modules/impit/index.js
+var require_impit = __commonJS((exports, module) => {
+  var { readFileSync } = __require("fs");
+  var nativeBinding = null;
+  var loadErrors = [];
+  var isMusl = () => {
+    let musl = false;
+    if (process.platform === "linux") {
+      musl = isMuslFromFilesystem();
+      if (musl === null) {
+        musl = isMuslFromReport();
+      }
+      if (musl === null) {
+        musl = isMuslFromChildProcess();
+      }
+    }
+    return musl;
+  };
+  var isFileMusl = (f) => f.includes("libc.musl-") || f.includes("ld-musl-");
+  var isMuslFromFilesystem = () => {
+    try {
+      return readFileSync("/usr/bin/ldd", "utf-8").includes("musl");
+    } catch {
+      return null;
+    }
+  };
+  var isMuslFromReport = () => {
+    let report = null;
+    if (typeof process.report?.getReport === "function") {
+      process.report.excludeNetwork = true;
+      report = process.report.getReport();
+    }
+    if (!report) {
+      return null;
+    }
+    if (report.header && report.header.glibcVersionRuntime) {
+      return false;
+    }
+    if (Array.isArray(report.sharedObjects)) {
+      if (report.sharedObjects.some(isFileMusl)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  var isMuslFromChildProcess = () => {
+    try {
+      return __require("child_process").execSync("ldd --version", { encoding: "utf8" }).includes("musl");
+    } catch (e) {
+      return false;
+    }
+  };
+  function requireNative() {
+    if (process.env.NAPI_RS_NATIVE_LIBRARY_PATH) {
+      try {
+        return __require(process.env.NAPI_RS_NATIVE_LIBRARY_PATH);
+      } catch (err2) {
+        loadErrors.push(err2);
+      }
+    } else if (process.platform === "android") {
+      if (process.arch === "arm64") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.android-arm64.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-android-arm64");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-android-arm64/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else if (process.arch === "arm") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.android-arm-eabi.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-android-arm-eabi");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-android-arm-eabi/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else {
+        loadErrors.push(new Error(`Unsupported architecture on Android ${process.arch}`));
+      }
+    } else if (process.platform === "win32") {
+      if (process.arch === "x64") {
+        if (process.config?.variables?.shlib_suffix === "dll.a" || process.config?.variables?.node_target_type === "shared_library") {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.win32-x64-gnu.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-win32-x64-gnu");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-win32-x64-gnu/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        } else {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.win32-x64-msvc.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = require_impit_node_win32_x64_msvc();
+            const bindingPackageVersion = require_package().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        }
+      } else if (process.arch === "ia32") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.win32-ia32-msvc.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-win32-ia32-msvc");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-win32-ia32-msvc/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else if (process.arch === "arm64") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.win32-arm64-msvc.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-win32-arm64-msvc");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-win32-arm64-msvc/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else {
+        loadErrors.push(new Error(`Unsupported architecture on Windows: ${process.arch}`));
+      }
+    } else if (process.platform === "darwin") {
+      try {
+        return (()=>{throw new Error("Cannot require module "+"./impit-node.darwin-universal.node");})();
+      } catch (e) {
+        loadErrors.push(e);
+      }
+      try {
+        const binding = (()=>{throw new Error("Cannot require module "+"impit-darwin-universal");})();
+        const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-darwin-universal/package.json");})().version;
+        if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+          throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+        }
+        return binding;
+      } catch (e) {
+        loadErrors.push(e);
+      }
+      if (process.arch === "x64") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.darwin-x64.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-darwin-x64");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-darwin-x64/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else if (process.arch === "arm64") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.darwin-arm64.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-darwin-arm64");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-darwin-arm64/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else {
+        loadErrors.push(new Error(`Unsupported architecture on macOS: ${process.arch}`));
+      }
+    } else if (process.platform === "freebsd") {
+      if (process.arch === "x64") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.freebsd-x64.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-freebsd-x64");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-freebsd-x64/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else if (process.arch === "arm64") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.freebsd-arm64.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-freebsd-arm64");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-freebsd-arm64/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else {
+        loadErrors.push(new Error(`Unsupported architecture on FreeBSD: ${process.arch}`));
+      }
+    } else if (process.platform === "linux") {
+      if (process.arch === "x64") {
+        if (isMusl()) {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-x64-musl.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-x64-musl");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-x64-musl/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        } else {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-x64-gnu.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-x64-gnu");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-x64-gnu/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        }
+      } else if (process.arch === "arm64") {
+        if (isMusl()) {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-arm64-musl.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-arm64-musl");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-arm64-musl/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        } else {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-arm64-gnu.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-arm64-gnu");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-arm64-gnu/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        }
+      } else if (process.arch === "arm") {
+        if (isMusl()) {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-arm-musleabihf.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-arm-musleabihf");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-arm-musleabihf/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        } else {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-arm-gnueabihf.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-arm-gnueabihf");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-arm-gnueabihf/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        }
+      } else if (process.arch === "loong64") {
+        if (isMusl()) {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-loong64-musl.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-loong64-musl");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-loong64-musl/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        } else {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-loong64-gnu.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-loong64-gnu");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-loong64-gnu/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        }
+      } else if (process.arch === "riscv64") {
+        if (isMusl()) {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-riscv64-musl.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-riscv64-musl");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-riscv64-musl/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        } else {
+          try {
+            return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-riscv64-gnu.node");})();
+          } catch (e) {
+            loadErrors.push(e);
+          }
+          try {
+            const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-riscv64-gnu");})();
+            const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-riscv64-gnu/package.json");})().version;
+            if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+              throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+            }
+            return binding;
+          } catch (e) {
+            loadErrors.push(e);
+          }
+        }
+      } else if (process.arch === "ppc64") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-ppc64-gnu.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-ppc64-gnu");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-ppc64-gnu/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else if (process.arch === "s390x") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.linux-s390x-gnu.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-linux-s390x-gnu");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-linux-s390x-gnu/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else {
+        loadErrors.push(new Error(`Unsupported architecture on Linux: ${process.arch}`));
+      }
+    } else if (process.platform === "openharmony") {
+      if (process.arch === "arm64") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.openharmony-arm64.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-openharmony-arm64");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-openharmony-arm64/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else if (process.arch === "x64") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.openharmony-x64.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-openharmony-x64");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-openharmony-x64/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else if (process.arch === "arm") {
+        try {
+          return (()=>{throw new Error("Cannot require module "+"./impit-node.openharmony-arm.node");})();
+        } catch (e) {
+          loadErrors.push(e);
+        }
+        try {
+          const binding = (()=>{throw new Error("Cannot require module "+"impit-openharmony-arm");})();
+          const bindingPackageVersion = (()=>{throw new Error("Cannot require module "+"impit-openharmony-arm/package.json");})().version;
+          if (bindingPackageVersion !== "0.10.1" && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0") {
+            throw new Error(`Native binding package version mismatch, expected 0.10.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`);
+          }
+          return binding;
+        } catch (e) {
+          loadErrors.push(e);
+        }
+      } else {
+        loadErrors.push(new Error(`Unsupported architecture on OpenHarmony: ${process.arch}`));
+      }
+    } else {
+      loadErrors.push(new Error(`Unsupported OS: ${process.platform}, architecture: ${process.arch}`));
+    }
+  }
+  nativeBinding = requireNative();
+  if (!nativeBinding || process.env.NAPI_RS_FORCE_WASI) {
+    let wasiBinding = null;
+    let wasiBindingError = null;
+    try {
+      wasiBinding = (()=>{throw new Error("Cannot require module "+"./impit-node.wasi.cjs");})();
+      nativeBinding = wasiBinding;
+    } catch (err2) {
+      if (process.env.NAPI_RS_FORCE_WASI) {
+        wasiBindingError = err2;
+      }
+    }
+    if (!nativeBinding || process.env.NAPI_RS_FORCE_WASI) {
+      try {
+        wasiBinding = (()=>{throw new Error("Cannot require module "+"impit-wasm32-wasi");})();
+        nativeBinding = wasiBinding;
+      } catch (err2) {
+        if (process.env.NAPI_RS_FORCE_WASI) {
+          if (!wasiBindingError) {
+            wasiBindingError = err2;
+          } else {
+            wasiBindingError.cause = err2;
+          }
+          loadErrors.push(err2);
+        }
+      }
+    }
+    if (process.env.NAPI_RS_FORCE_WASI === "error" && !wasiBinding) {
+      const error = new Error("WASI binding not found and NAPI_RS_FORCE_WASI is set to error");
+      error.cause = wasiBindingError;
+      throw error;
+    }
+  }
+  if (!nativeBinding) {
+    if (loadErrors.length > 0) {
+      throw new Error(`Cannot find native binding. ` + `npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). ` + "Please try `npm i` again after removing both package-lock.json and node_modules directory.", {
+        cause: loadErrors.reduce((err2, cur) => {
+          cur.cause = err2;
+          return cur;
+        })
+      });
+    }
+    throw new Error(`Failed to load native binding`);
+  }
+  module.exports = nativeBinding;
+  module.exports.Impit = nativeBinding.Impit;
+  module.exports.ImpitWrapper = nativeBinding.ImpitWrapper;
+  module.exports.ImpitResponse = nativeBinding.ImpitResponse;
+  module.exports.Browser = nativeBinding.Browser;
+  module.exports.HttpMethod = nativeBinding.HttpMethod;
+});
+
+// node_modules/impit/index.wrapper.js
+var require_index_wrapper = __commonJS((exports, module) => {
+  var errors = require_errors();
+  var { rethrowNativeError } = errors;
+  var native = null;
+  try {
+    native = require_impit();
+  } catch (e) {
+    throw new Error(`
+impit couldn't load native bindings.
+
+This can have several reasons:
+- The native bindings are not compiled for your platform (${process.platform}-${process.arch}).
+- You skipped installation of optional dependencies (using e.g. \`npm i --omit=optional\`).
+        While the main package (impit) still installs, your package manager will skip installing the prebuilt native bindings for your platform.
+        If you still want to skip installing other optional dependencies, please install the native bindings for your platform as a direct dependency of your project.
+- You are using a non-standard Node.js runtime (e.g. Deno, Bun, Cloudflare workers etc.) that might not support native modules.
+${process.platform === "win32" ? `- On Windows, sometimes the Visual C++ Redistributable for Visual Studio is missing.
+        Please install it from https://learn.microsoft.com/en-US/cpp/windows/latest-supported-vc-redist?view=msvc-170` : ""}
+
+Run your script with IMPIT_VERBOSE=1 environment variable to get more information about the error.
+`, process.env["IMPIT_VERBOSE"] === "1" ? { cause: e } : undefined);
+  }
+
+  class ResponsePatches {
+    static async text() {
+      const buffer = await this.bytes();
+      return this.decodeBuffer(buffer);
+    }
+  }
+  function canonicalizeHeaders(headers) {
+    if (headers instanceof Headers) {
+      return [...headers.entries()];
+    } else if (Array.isArray(headers)) {
+      return headers;
+    } else if (typeof headers === "object") {
+      return Object.entries(headers || {});
+    }
+    return [];
+  }
+  function isRedirectStatus(status2) {
+    return [301, 302, 303, 307, 308].includes(status2);
+  }
+  function toUint8Array(chunk) {
+    return typeof chunk === "string" ? new TextEncoder().encode(chunk) : new Uint8Array(chunk);
+  }
+  function concatUint8Arrays(chunks) {
+    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return result;
+  }
+  function shouldRewriteRedirectToGet(httpStatus, method) {
+    if ([301, 302].includes(httpStatus)) {
+      return method === "POST";
+    }
+    if (httpStatus === 303)
+      return method !== "HEAD";
+    return false;
+  }
+
+  class Impit extends native.Impit {
+    #cookieJar;
+    #followRedirects;
+    #maxRedirects;
+    constructor(options) {
+      super({
+        ...options,
+        headers: canonicalizeHeaders(options?.headers)
+      });
+      this.#cookieJar = options?.cookieJar;
+      this.#followRedirects = options?.followRedirects ?? true;
+      this.#maxRedirects = options?.maxRedirects ?? 20;
+    }
+    async#getCookies(url) {
+      try {
+        return await this.#cookieJar?.getCookieString?.(url) ?? "";
+      } catch {
+        return "";
+      }
+    }
+    async#setCookies(headers, url) {
+      if (!this.#cookieJar)
+        return;
+      for (const cookie of headers.getSetCookie?.() ?? []) {
+        try {
+          await this.#cookieJar.setCookie?.(cookie, url);
+        } catch {}
+      }
+    }
+    async#generateMultipartFormData(formData) {
+      const boundary = super.getMultipartBoundary();
+      const prefix = `--${boundary}\r
+Content-Disposition: form-data`;
+      /*! formdata-polyfill. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
+      const escape = (str) => str.replace(/\n/g, "%0A").replace(/\r/g, "%0D").replace(/"/g, "%22");
+      const normalizeLinefeeds = (value) => value.replace(/\r?\n|\r/g, `\r
+`);
+      const blobParts = [];
+      const rn = new Uint8Array([13, 10]);
+      const textEncoder = new TextEncoder;
+      for (const [name, value] of formData) {
+        if (typeof value === "string") {
+          const chunk = textEncoder.encode(prefix + `; name="${escape(normalizeLinefeeds(name))}"` + `\r
+\r
+${normalizeLinefeeds(value)}\r
+`);
+          blobParts.push(chunk);
+        } else {
+          const chunk = textEncoder.encode(`${prefix}; name="${escape(normalizeLinefeeds(name))}"` + (value.name ? `; filename="${escape(value.name)}"` : "") + `\r
+` + `Content-Type: ${value.type || "application/octet-stream"}\r
+\r
+`);
+          blobParts.push(chunk, value, rn);
+        }
+      }
+      blobParts.push(textEncoder.encode(`--${boundary}--\r
+`));
+      const action = async function* () {
+        for (const part of blobParts) {
+          if (part.stream) {
+            yield* part.stream();
+          } else {
+            yield part;
+          }
+        }
+      };
+      const parts = [];
+      for await (const part of action()) {
+        if (part instanceof Uint8Array) {
+          parts.push(part);
+        } else if (part instanceof Blob) {
+          parts.push(new Uint8Array(await part.arrayBuffer()));
+        } else {
+          throw new TypeError("Unsupported part type");
+        }
+      }
+      const body = new Uint8Array(parts.reduce((acc, part) => acc + part.length, 0));
+      let offset = 0;
+      for (const part of parts) {
+        body.set(part, offset);
+        offset += part.length;
+      }
+      return { body, type: `multipart/form-data; boundary=${boundary}` };
+    }
+    async#serializeBody(body) {
+      if (typeof body === "string") {
+        return { body: new TextEncoder().encode(body), type: "text/plain;charset=UTF-8" };
+      } else if (body instanceof URLSearchParams) {
+        return { body: new TextEncoder().encode(body.toString()), type: "application/x-www-form-urlencoded;charset=UTF-8" };
+      } else if (body instanceof ArrayBuffer) {
+        return { body: new Uint8Array(body.slice()), type: "" };
+      } else if (ArrayBuffer.isView(body)) {
+        return { body: new Uint8Array(body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength)), type: "" };
+      } else if (body instanceof Blob) {
+        return { body: new Uint8Array(await body.arrayBuffer()), type: body.type };
+      } else if (body instanceof FormData) {
+        return await this.#generateMultipartFormData(body);
+      } else if (body instanceof ReadableStream) {
+        const reader = body.getReader();
+        const chunks = [];
+        let done = false;
+        while (!done) {
+          const { done: streamDone, value } = await reader.read();
+          done = streamDone;
+          if (value != null)
+            chunks.push(toUint8Array(value));
+        }
+        return { body: concatUint8Arrays(chunks), type: "" };
+      } else if (body && typeof body[Symbol.asyncIterator] === "function") {
+        const chunks = [];
+        for await (const chunk of body) {
+          chunks.push(toUint8Array(chunk));
+        }
+        return { body: concatUint8Arrays(chunks), type: "" };
+      }
+      return { body, type: "" };
+    }
+    async#parseFetchOptions(resource, init) {
+      let url;
+      let options = { ...init };
+      if (resource instanceof Request) {
+        url = resource.url;
+        options = {
+          method: resource.method,
+          headers: resource.headers,
+          body: resource.body,
+          ...init
+        };
+        if (!("redirect" in options) && resource.redirect !== "follow") {
+          options.redirect = resource.redirect;
+        }
+      } else if (resource.toString) {
+        url = resource.toString();
+      } else {
+        url = resource;
+      }
+      options.headers = canonicalizeHeaders(options?.headers);
+      if (options?.body) {
+        const { body: requestBody, type } = await this.#serializeBody(options.body);
+        options.body = requestBody;
+        if (type && !options.headers.some(([key]) => key.toLowerCase() === "content-type")) {
+          options.headers.push(["Content-Type", type]);
+        }
+      } else {
+        delete options.body;
+      }
+      return {
+        url,
+        method: options.method,
+        headers: options.headers,
+        body: options.body,
+        timeout: options.timeout,
+        forceHttp3: options.forceHttp3,
+        signal: options.signal,
+        redirect: options.redirect
+      };
+    }
+    async fetch(resource, init) {
+      const { url: initialUrl, signal, redirect: redirect2, ...options } = await this.#parseFetchOptions(resource, init);
+      signal?.throwIfAborted();
+      let abortHandler;
+      const waitForAbort = new Promise((_2, reject) => {
+        abortHandler = () => reject(signal.reason);
+        signal?.addEventListener?.("abort", abortHandler, { once: true });
+      });
+      try {
+        return await this.#fetchWithRedirectHandling(initialUrl, options, signal, waitForAbort, redirect2);
+      } catch (err2) {
+        rethrowNativeError(err2);
+      } finally {
+        signal?.removeEventListener?.("abort", abortHandler);
+      }
+    }
+    async#fetchWithRedirectHandling(initialUrl, options, signal, waitForAbort, redirect2) {
+      let url = initialUrl;
+      let method = options.method || "GET";
+      let redirectCount = 0;
+      const maxRedirects = this.#maxRedirects;
+      const followRedirects = redirect2 ? redirect2 === "follow" : this.#followRedirects;
+      const errorOnRedirect = redirect2 === "error";
+      while (true) {
+        signal?.throwIfAborted();
+        const headers = [...options.headers || []];
+        const hasUserCookie = headers.some(([k2]) => k2.toLowerCase() === "cookie");
+        if (this.#cookieJar && !hasUserCookie) {
+          const cookieHeader = await this.#getCookies(url);
+          if (cookieHeader) {
+            headers.push(["Cookie", cookieHeader]);
+          }
+        }
+        const response = super.fetch(url, {
+          ...options,
+          method,
+          headers,
+          body: method === "GET" ? undefined : options.body
+        });
+        const originalResponse = await Promise.race([
+          response,
+          waitForAbort
+        ]);
+        const responseHeaders = new Headers(originalResponse.headers);
+        if (this.#cookieJar) {
+          await this.#setCookies(responseHeaders, url);
+        }
+        if (isRedirectStatus(originalResponse.status)) {
+          if (errorOnRedirect) {
+            throw new TypeError(`URI requested responds with a redirect, redirect mode is set to 'error': ${url}`);
+          }
+          if (followRedirects) {
+            const location = responseHeaders.get("location");
+            if (!location) {
+              return this.#wrapResponse(originalResponse, signal);
+            }
+            redirectCount++;
+            if (redirectCount > maxRedirects) {
+              throw new Error(`Maximum redirect limit (${maxRedirects}) exceeded`);
+            }
+            url = new URL(location, url).toString();
+            method = shouldRewriteRedirectToGet(originalResponse.status, method) ? "GET" : method;
+            continue;
+          }
+        }
+        return this.#wrapResponse(originalResponse, signal);
+      }
+    }
+    #wrapResponse(originalResponse, signal) {
+      signal?.throwIfAborted();
+      let abortHandler;
+      const cleanup = () => {
+        signal?.removeEventListener?.("abort", abortHandler);
+      };
+      if (signal) {
+        abortHandler = () => originalResponse.abort();
+        signal.addEventListener("abort", abortHandler);
+      }
+      Object.defineProperty(originalResponse, "text", {
+        value: ResponsePatches.text.bind(originalResponse),
+        configurable: true
+      });
+      let bodyConsumed = false;
+      const nativeBytes = originalResponse.bytes.bind(originalResponse);
+      Object.defineProperty(originalResponse, "bytes", {
+        value: async function() {
+          bodyConsumed = true;
+          try {
+            return await nativeBytes();
+          } finally {
+            cleanup();
+          }
+        },
+        configurable: true
+      });
+      const nativeArrayBuffer = originalResponse.arrayBuffer.bind(originalResponse);
+      Object.defineProperty(originalResponse, "arrayBuffer", {
+        value: async function() {
+          bodyConsumed = true;
+          try {
+            return await nativeArrayBuffer();
+          } finally {
+            cleanup();
+          }
+        },
+        configurable: true
+      });
+      const nativeJson = originalResponse.json.bind(originalResponse);
+      Object.defineProperty(originalResponse, "json", {
+        value: async function() {
+          bodyConsumed = true;
+          try {
+            return await nativeJson();
+          } finally {
+            cleanup();
+          }
+        },
+        configurable: true
+      });
+      Object.defineProperty(originalResponse, "headers", {
+        value: new Headers(originalResponse.headers)
+      });
+      Object.defineProperty(originalResponse, "clone", {
+        value: function() {
+          if (bodyConsumed) {
+            throw new TypeError("Response body has already been consumed");
+          }
+          const [stream1, stream2] = this.body.tee();
+          const delegate = new Response(stream1, {
+            status: this.status,
+            statusText: this.statusText,
+            headers: this.headers
+          });
+          Object.defineProperty(this, "body", {
+            get: () => delegate.body,
+            configurable: true
+          });
+          const decodeBuffer = this.decodeBuffer.bind(this);
+          Object.defineProperty(this, "arrayBuffer", {
+            value: async function() {
+              bodyConsumed = true;
+              try {
+                return await delegate.arrayBuffer();
+              } finally {
+                cleanup();
+              }
+            },
+            configurable: true
+          });
+          Object.defineProperty(this, "bytes", {
+            value: async function() {
+              bodyConsumed = true;
+              try {
+                return await delegate.bytes();
+              } finally {
+                cleanup();
+              }
+            },
+            configurable: true
+          });
+          Object.defineProperty(this, "json", {
+            value: async function() {
+              bodyConsumed = true;
+              try {
+                return await delegate.json();
+              } finally {
+                cleanup();
+              }
+            },
+            configurable: true
+          });
+          Object.defineProperty(this, "text", {
+            value: async function() {
+              bodyConsumed = true;
+              try {
+                const buffer = await delegate.arrayBuffer();
+                return decodeBuffer(Buffer.from(buffer));
+              } finally {
+                cleanup();
+              }
+            },
+            configurable: true
+          });
+          const clone2 = new Response(stream2, {
+            status: this.status,
+            statusText: this.statusText,
+            headers: this.headers
+          });
+          Object.defineProperty(clone2, "url", {
+            value: this.url,
+            enumerable: true
+          });
+          Object.defineProperty(clone2, "text", {
+            value: async function() {
+              const buffer = await clone2.arrayBuffer();
+              return decodeBuffer(Buffer.from(buffer));
+            }
+          });
+          return clone2;
+        }
+      });
+      return originalResponse;
+    }
+  }
+  exports.Impit = Impit;
+  exports.ImpitWrapper = native.ImpitWrapper;
+  exports.ImpitResponse = native.ImpitResponse;
+  exports.Browser = native.Browser;
+  exports.HttpMethod = native.HttpMethod;
+  Object.assign(exports, errors);
+  delete exports.rethrowNativeError;
+});
+
 // node_modules/memoirist/dist/bun/index.js
 var Y = (v, b) => {
   let A = b?.length ? {} : null;
@@ -19223,6 +20436,9 @@ var cors = (config) => {
   });
 };
 
+// src/index.ts
+var import_impit = __toESM(require_index_wrapper(), 1);
+
 // node_modules/zod/v3/external.js
 var exports_external = {};
 __export(exports_external, {
@@ -23575,90 +24791,209 @@ function extractMaintenanceMessage(ma) {
 }
 
 // src/index.ts
-var voucherClient = new TmnVoucherClient;
-function convert_message(response) {
-  switch (response.code) {
-    case "VOUCHER_NOT_FOUND":
-      return "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E0B\u0E2D\u0E07";
-    case "VOUCHER_EXPIRED":
-      return "\u0E0B\u0E2D\u0E07\u0E2B\u0E21\u0E14\u0E2D\u0E32\u0E22\u0E38";
-    case "VOUCHER_OUT_OF_STOCK":
-      return "\u0E0B\u0E2D\u0E07\u0E16\u0E39\u0E01\u0E43\u0E0A\u0E49\u0E44\u0E1B\u0E41\u0E25\u0E49\u0E27";
-    case "CANNOT_GET_OWN_VOUCHER":
-      return "\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E0B\u0E2D\u0E07\u0E15\u0E31\u0E27\u0E40\u0E2D\u0E07\u0E44\u0E14\u0E49";
-    case "CONDITION_NOT_MET":
-      return "\u0E44\u0E21\u0E48\u0E15\u0E23\u0E07\u0E40\u0E07\u0E37\u0E48\u0E2D\u0E19\u0E44\u0E02";
-    case "TARGET_USER_NOT_FOUND":
-      return "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E1C\u0E39\u0E49\u0E23\u0E31\u0E1A";
-    case "TARGET_USER_REDEEMED":
-      return "\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E19\u0E35\u0E49\u0E40\u0E04\u0E22\u0E23\u0E31\u0E1A\u0E0B\u0E2D\u0E07\u0E19\u0E35\u0E49\u0E41\u0E25\u0E49\u0E27";
-    case "TARGET_USER_STATUS_INACTIVE":
-      return "\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E1C\u0E39\u0E49\u0E23\u0E31\u0E1A\u0E44\u0E21\u0E48\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19";
-    case "INVALID_INPUT":
-      return "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07";
-    case "MAINTENANCE":
-      return "\u0E23\u0E30\u0E1A\u0E1A\u0E0B\u0E2D\u0E07\u0E01\u0E33\u0E25\u0E31\u0E07\u0E1B\u0E34\u0E14\u0E1B\u0E23\u0E31\u0E1A\u0E1B\u0E23\u0E38\u0E07";
-    case "TIMEOUT":
-      return "\u0E01\u0E32\u0E23\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E2B\u0E21\u0E14\u0E40\u0E27\u0E25\u0E32";
-    case "NETWORK_ERROR":
-      return "\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E40\u0E0B\u0E34\u0E23\u0E4C\u0E1F\u0E40\u0E27\u0E2D\u0E23\u0E4C\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08";
-    default:
-      return `\u0E01\u0E32\u0E23\u0E41\u0E25\u0E01\u0E0B\u0E2D\u0E07\u0E25\u0E49\u0E21\u0E40\u0E2B\u0E25\u0E27: ${response.message}`;
+var impit = new import_impit.Impit({
+  browser: "firefox",
+  timeout: 15000
+});
+var CODE_TH = {
+  VOUCHER_NOT_FOUND: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E0B\u0E2D\u0E07",
+  VOUCHER_EXPIRED: "\u0E0B\u0E2D\u0E07\u0E2B\u0E21\u0E14\u0E2D\u0E32\u0E22\u0E38",
+  VOUCHER_OUT_OF_STOCK: "\u0E0B\u0E2D\u0E07\u0E16\u0E39\u0E01\u0E43\u0E0A\u0E49\u0E44\u0E1B\u0E41\u0E25\u0E49\u0E27",
+  CANNOT_GET_OWN_VOUCHER: "\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E0B\u0E2D\u0E07\u0E15\u0E31\u0E27\u0E40\u0E2D\u0E07\u0E44\u0E14\u0E49",
+  CONDITION_NOT_MET: "\u0E44\u0E21\u0E48\u0E15\u0E23\u0E07\u0E40\u0E07\u0E37\u0E48\u0E2D\u0E19\u0E44\u0E02",
+  TARGET_USER_NOT_FOUND: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E1C\u0E39\u0E49\u0E23\u0E31\u0E1A",
+  TARGET_USER_REDEEMED: "\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E19\u0E35\u0E49\u0E40\u0E04\u0E22\u0E23\u0E31\u0E1A\u0E0B\u0E2D\u0E07\u0E19\u0E35\u0E49\u0E41\u0E25\u0E49\u0E27",
+  TARGET_USER_STATUS_INACTIVE: "\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E1C\u0E39\u0E49\u0E23\u0E31\u0E1A\u0E44\u0E21\u0E48\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19",
+  INVALID_INPUT: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
+  BAD_PARAM: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
+  MAINTENANCE: "\u0E23\u0E30\u0E1A\u0E1A\u0E0B\u0E2D\u0E07\u0E01\u0E33\u0E25\u0E31\u0E07\u0E1B\u0E34\u0E14\u0E1B\u0E23\u0E31\u0E1A\u0E1B\u0E23\u0E38\u0E07",
+  TIMEOUT: "\u0E01\u0E32\u0E23\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E2B\u0E21\u0E14\u0E40\u0E27\u0E25\u0E32",
+  NETWORK_ERROR: "\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E40\u0E0B\u0E34\u0E23\u0E4C\u0E1F\u0E40\u0E27\u0E2D\u0E23\u0E4C\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08"
+};
+function request_url(input) {
+  if (typeof input === "string") {
+    return input;
   }
+  if (input instanceof URL) {
+    return input.href;
+  }
+  return input.url;
+}
+function tmn_status_code(value) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const obj = value;
+  if (typeof obj.code === "string" && obj.code in CODE_TH) {
+    return obj.code;
+  }
+  const status2 = obj.status;
+  if (status2 && typeof status2 === "object") {
+    const code = status2.code;
+    if (typeof code === "string" && code in CODE_TH) {
+      return code;
+    }
+  }
+  if ("data" in obj) {
+    return tmn_status_code(obj.data);
+  }
+  return null;
+}
+function wrap_tmn_error_body(json) {
+  const nested = json.status;
+  if (nested && typeof nested === "object") {
+    const status2 = nested;
+    if (typeof status2.code === "string" && typeof status2.message === "string") {
+      return JSON.stringify(json);
+    }
+  }
+  const code = typeof json.code === "string" ? json.code : tmn_status_code(json);
+  if (!code) {
+    return null;
+  }
+  return JSON.stringify({
+    status: {
+      code,
+      message: typeof json.message === "string" ? json.message : code
+    },
+    data: json.data ?? null
+  });
+}
+function is_cloudflare_block(status2, body) {
+  if (status2 !== 403 && status2 !== 503) {
+    return false;
+  }
+  return body.includes("Attention Required") || body.includes("Cloudflare") || body.includes("cf-browser-verification");
+}
+async function tmn_fetch(input, init) {
+  const url = request_url(input);
+  const res = await impit.fetch(url, init);
+  const text = await res.text();
+  if (res.ok) {
+    return new Response(text, {
+      status: res.status,
+      statusText: res.statusText,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+  console.warn(`[tmn] HTTP ${res.status} ${url} ${text.slice(0, 400)}`);
+  if (is_cloudflare_block(res.status, text)) {
+    return new Response(text, {
+      status: res.status,
+      statusText: res.statusText
+    });
+  }
+  try {
+    const json = JSON.parse(text);
+    if (json && typeof json === "object") {
+      const wrapped = wrap_tmn_error_body(json);
+      if (wrapped) {
+        return new Response(wrapped, {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    }
+  } catch {}
+  return new Response(text, {
+    status: res.status,
+    statusText: res.statusText
+  });
+}
+var voucherClient = new TmnVoucherClient({
+  timeoutMs: 15000,
+  fetch: tmn_fetch
+});
+function convert_message(response) {
+  const code = tmn_status_code(response) ?? response.code;
+  if (CODE_TH[code]) {
+    return CODE_TH[code];
+  }
+  const blob = `${response.message} ${JSON.stringify(response.data ?? "")}`.toLowerCase();
+  if (blob.includes("expired") || blob.includes("\u0E2B\u0E21\u0E14\u0E2D\u0E32\u0E22\u0E38")) {
+    return "\u0E0B\u0E2D\u0E07\u0E2B\u0E21\u0E14\u0E2D\u0E32\u0E22\u0E38";
+  }
+  if (blob.includes("not found") || blob.includes("\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E0B\u0E2D\u0E07")) {
+    return "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E0B\u0E2D\u0E07";
+  }
+  if (blob.includes("out of stock") || blob.includes("already used") || blob.includes("\u0E16\u0E39\u0E01\u0E43\u0E0A\u0E49")) {
+    return "\u0E0B\u0E2D\u0E07\u0E16\u0E39\u0E01\u0E43\u0E0A\u0E49\u0E44\u0E1B\u0E41\u0E25\u0E49\u0E27";
+  }
+  if (blob.includes("own voucher") || blob.includes("\u0E15\u0E31\u0E27\u0E40\u0E2D\u0E07")) {
+    return "\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E0B\u0E2D\u0E07\u0E15\u0E31\u0E27\u0E40\u0E2D\u0E07\u0E44\u0E14\u0E49";
+  }
+  if (blob.includes("redeemed")) {
+    return "\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E19\u0E35\u0E49\u0E40\u0E04\u0E22\u0E23\u0E31\u0E1A\u0E0B\u0E2D\u0E07\u0E19\u0E35\u0E49\u0E41\u0E25\u0E49\u0E27";
+  }
+  if (blob.includes("inactive")) {
+    return "\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E1C\u0E39\u0E49\u0E23\u0E31\u0E1A\u0E44\u0E21\u0E48\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19";
+  }
+  if (blob.includes("maintenance")) {
+    return "\u0E23\u0E30\u0E1A\u0E1A\u0E0B\u0E2D\u0E07\u0E01\u0E33\u0E25\u0E31\u0E07\u0E1B\u0E34\u0E14\u0E1B\u0E23\u0E31\u0E1A\u0E1B\u0E23\u0E38\u0E07";
+  }
+  if (blob.includes("403") || blob.includes("forbidden") || blob.includes("cloudflare")) {
+    return "\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D TrueMoney \u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08";
+  }
+  return "\u0E43\u0E0A\u0E49\u0E0B\u0E2D\u0E07\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08";
 }
 var app = new Elysia().use(cors({
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
-})).get("/", () => "voucher api working").post("/redeem", async ({ body }) => {
-  try {
-    const { phone_number, voucher_url } = body;
-    if (!phone_number || !voucher_url) {
-      return {
-        success: false,
-        message: "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38\u0E40\u0E1A\u0E2D\u0E23\u0E4C\u0E42\u0E17\u0E23\u0E28\u0E31\u0E1E\u0E17\u0E4C\u0E41\u0E25\u0E30\u0E25\u0E34\u0E07\u0E01\u0E4C\u0E04\u0E39\u0E1B\u0E2D\u0E07"
-      };
-    }
-    try {
-      const result = await voucherClient.redeemVoucher(phone_number, voucher_url);
-      if (result.success) {
-        const ticket = result.data.raw.my_ticket ?? result.data.raw.tickets?.[0];
-        if (ticket) {
-          return {
-            success: true,
-            message: "\u0E23\u0E31\u0E1A\u0E40\u0E07\u0E34\u0E19\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08",
-            data: {
-              name: ticket.full_name,
-              amount: ticket.amount_baht
-            }
-          };
-        }
-        return {
-          success: false,
-          message: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E1C\u0E39\u0E49\u0E23\u0E31\u0E1A\u0E0B\u0E2D\u0E07"
-        };
-      }
-      return {
-        success: false,
-        message: convert_message(result)
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : "Unknown error"
-      };
-    }
-  } catch {
+})).onError(({ code }) => {
+  if (code === "PARSE") {
     return {
       success: false,
       message: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E17\u0E35\u0E48\u0E2A\u0E48\u0E07\u0E21\u0E32\u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48 JSON"
     };
   }
-}).listen({
-  hostname: "0.0.0.0",
-  port: Number(process.env.PORT ?? 3000)
+}).get("/", () => "voucher api working").post("/redeem", async ({ body }) => {
+  const { phone_number, voucher_url } = body ?? {};
+  if (!phone_number || !voucher_url) {
+    return {
+      success: false,
+      message: "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38\u0E40\u0E1A\u0E2D\u0E23\u0E4C\u0E42\u0E17\u0E23\u0E28\u0E31\u0E1E\u0E17\u0E4C\u0E41\u0E25\u0E30\u0E25\u0E34\u0E07\u0E01\u0E4C\u0E04\u0E39\u0E1B\u0E2D\u0E07"
+    };
+  }
+  try {
+    const result = await voucherClient.redeemVoucher(phone_number, voucher_url);
+    if (result.success) {
+      const ticket = result.data.raw.my_ticket ?? result.data.raw.tickets?.[0];
+      if (ticket) {
+        return {
+          success: true,
+          message: "\u0E23\u0E31\u0E1A\u0E40\u0E07\u0E34\u0E19\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08",
+          data: {
+            name: ticket.full_name,
+            amount: ticket.amount_baht
+          }
+        };
+      }
+      return {
+        success: false,
+        message: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E1C\u0E39\u0E49\u0E23\u0E31\u0E1A\u0E0B\u0E2D\u0E07"
+      };
+    }
+    const message = convert_message(result);
+    console.warn(`[redeem] ${result.code} ${result.message} -> ${message}`);
+    return {
+      success: false,
+      message
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
 });
-console.log(`Running on http://localhost:${app.server?.port}`);
+if (!process.env.VERCEL) {
+  app.listen({
+    hostname: "0.0.0.0",
+    port: Number(process.env.PORT ?? 3000)
+  });
+  console.log(`Running on http://localhost:${app.server?.port}`);
+}
 var src_default = app;
 export {
   src_default as default

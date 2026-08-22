@@ -1,41 +1,190 @@
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
+import { Impit } from "impit";
 import { TmnVoucherClient } from "@prakrit_m/tmn-voucher";
 
-const voucherClient = new TmnVoucherClient();
+const impit = new Impit({
+    browser: "firefox",
+    timeout: 15_000,
+});
+
+const CODE_TH: Record<string, string> = {
+    VOUCHER_NOT_FOUND: "ไม่พบซอง",
+    VOUCHER_EXPIRED: "ซองหมดอายุ",
+    VOUCHER_OUT_OF_STOCK: "ซองถูกใช้ไปแล้ว",
+    CANNOT_GET_OWN_VOUCHER: "ไม่สามารถใช้ซองตัวเองได้",
+    CONDITION_NOT_MET: "ไม่ตรงเงื่อนไข",
+    TARGET_USER_NOT_FOUND: "ไม่พบบัญชีผู้รับ",
+    TARGET_USER_REDEEMED: "บัญชีนี้เคยรับซองนี้แล้ว",
+    TARGET_USER_STATUS_INACTIVE: "บัญชีผู้รับไม่พร้อมใช้งาน",
+    INVALID_INPUT: "ข้อมูลไม่ถูกต้อง",
+    BAD_PARAM: "ข้อมูลไม่ถูกต้อง",
+    MAINTENANCE: "ระบบซองกำลังปิดปรับปรุง",
+    TIMEOUT: "การเชื่อมต่อหมดเวลา",
+    NETWORK_ERROR: "เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ",
+};
+
+function request_url(input: string | URL | Request): string {
+    if (typeof input === "string") {
+        return input;
+    }
+    if (input instanceof URL) {
+        return input.href;
+    }
+    return input.url;
+}
+
+function tmn_status_code(value: unknown): string | null {
+    if (!value || typeof value !== "object") {
+        return null;
+    }
+    const obj = value as Record<string, unknown>;
+    if (typeof obj.code === "string" && obj.code in CODE_TH) {
+        return obj.code;
+    }
+    const status = obj.status;
+    if (status && typeof status === "object") {
+        const code = (status as Record<string, unknown>).code;
+        if (typeof code === "string" && code in CODE_TH) {
+            return code;
+        }
+    }
+    if ("data" in obj) {
+        return tmn_status_code(obj.data);
+    }
+    return null;
+}
+
+function wrap_tmn_error_body(json: Record<string, unknown>): string | null {
+    const nested = json.status;
+    if (nested && typeof nested === "object") {
+        const status = nested as Record<string, unknown>;
+        if (typeof status.code === "string" && typeof status.message === "string") {
+            return JSON.stringify(json);
+        }
+    }
+
+    const code = typeof json.code === "string" ? json.code : tmn_status_code(json);
+    if (!code) {
+        return null;
+    }
+
+    return JSON.stringify({
+        status: {
+            code,
+            message: typeof json.message === "string" ? json.message : code,
+        },
+        data: json.data ?? null,
+    });
+}
+
+function is_cloudflare_block(status: number, body: string): boolean {
+    if (status !== 403 && status !== 503) {
+        return false;
+    }
+    return (
+        body.includes("Attention Required") ||
+        body.includes("Cloudflare") ||
+        body.includes("cf-browser-verification")
+    );
+}
+
+async function tmn_fetch(
+    input: string | URL | Request,
+    init?: RequestInit,
+): Promise<Response> {
+    const url = request_url(input);
+    const res = await impit.fetch(url, init);
+    const text = await res.text();
+
+    if (res.ok) {
+        return new Response(text, {
+            status: res.status,
+            statusText: res.statusText,
+            headers: { "Content-Type": "application/json" },
+        });
+    }
+
+    console.warn(`[tmn] HTTP ${res.status} ${url} ${text.slice(0, 400)}`);
+
+    if (is_cloudflare_block(res.status, text)) {
+        return new Response(text, {
+            status: res.status,
+            statusText: res.statusText,
+        });
+    }
+
+    try {
+        const json = JSON.parse(text);
+        if (json && typeof json === "object") {
+            const wrapped = wrap_tmn_error_body(json as Record<string, unknown>);
+            if (wrapped) {
+                return new Response(wrapped, {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                });
+            }
+        }
+    } catch {
+        // keep original status
+    }
+
+    return new Response(text, {
+        status: res.status,
+        statusText: res.statusText,
+    });
+}
+
+const voucherClient = new TmnVoucherClient({
+    timeoutMs: 15_000,
+    fetch: tmn_fetch,
+});
 
 function convert_message(response: {
     code: string;
     message: string;
+    data?: unknown;
 }): string {
-    switch (response.code) {
-        case "VOUCHER_NOT_FOUND":
-            return "ไม่พบซอง";
-        case "VOUCHER_EXPIRED":
-            return "ซองหมดอายุ";
-        case "VOUCHER_OUT_OF_STOCK":
-            return "ซองถูกใช้ไปแล้ว";
-        case "CANNOT_GET_OWN_VOUCHER":
-            return "ไม่สามารถใช้ซองตัวเองได้";
-        case "CONDITION_NOT_MET":
-            return "ไม่ตรงเงื่อนไข";
-        case "TARGET_USER_NOT_FOUND":
-            return "ไม่พบบัญชีผู้รับ";
-        case "TARGET_USER_REDEEMED":
-            return "บัญชีนี้เคยรับซองนี้แล้ว";
-        case "TARGET_USER_STATUS_INACTIVE":
-            return "บัญชีผู้รับไม่พร้อมใช้งาน";
-        case "INVALID_INPUT":
-            return "ข้อมูลไม่ถูกต้อง";
-        case "MAINTENANCE":
-            return "ระบบซองกำลังปิดปรับปรุง";
-        case "TIMEOUT":
-            return "การเชื่อมต่อหมดเวลา";
-        case "NETWORK_ERROR":
-            return "เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ";
-        default:
-            return `การแลกซองล้มเหลว: ${response.message}`;
+    const code = tmn_status_code(response) ?? response.code;
+    if (CODE_TH[code]) {
+        return CODE_TH[code];
     }
+
+    const blob = `${response.message} ${JSON.stringify(response.data ?? "")}`.toLowerCase();
+    if (blob.includes("expired") || blob.includes("หมดอายุ")) {
+        return "ซองหมดอายุ";
+    }
+    if (blob.includes("not found") || blob.includes("ไม่พบซอง")) {
+        return "ไม่พบซอง";
+    }
+    if (
+        blob.includes("out of stock") ||
+        blob.includes("already used") ||
+        blob.includes("ถูกใช้")
+    ) {
+        return "ซองถูกใช้ไปแล้ว";
+    }
+    if (blob.includes("own voucher") || blob.includes("ตัวเอง")) {
+        return "ไม่สามารถใช้ซองตัวเองได้";
+    }
+    if (blob.includes("redeemed")) {
+        return "บัญชีนี้เคยรับซองนี้แล้ว";
+    }
+    if (blob.includes("inactive")) {
+        return "บัญชีผู้รับไม่พร้อมใช้งาน";
+    }
+    if (blob.includes("maintenance")) {
+        return "ระบบซองกำลังปิดปรับปรุง";
+    }
+    if (
+        blob.includes("403") ||
+        blob.includes("forbidden") ||
+        blob.includes("cloudflare")
+    ) {
+        return "เชื่อมต่อ TrueMoney ไม่สำเร็จ";
+    }
+
+    return "ใช้ซองไม่สำเร็จ";
 }
 
 const app = new Elysia()
@@ -97,9 +246,11 @@ const app = new Elysia()
                 };
             }
 
+            const message = convert_message(result);
+            console.warn(`[redeem] ${result.code} ${result.message} -> ${message}`);
             return {
                 success: false,
-                message: convert_message(result),
+                message,
             };
         } catch (error) {
             return {

@@ -10,7 +10,8 @@
   "dependencies": {
     "@elysiajs/cors": "^1.4.2",
     "@prakrit_m/tmn-voucher": "^2.0.0",
-    "elysia": "^1.4.29"
+    "elysia": "^1.4.29",
+    "impit": "^0.14.3"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14"
